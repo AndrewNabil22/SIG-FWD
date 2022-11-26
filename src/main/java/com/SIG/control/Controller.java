@@ -16,6 +16,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JFileChooser;
@@ -131,6 +134,7 @@ public class Controller implements ActionListener, ListSelectionListener {
             List<String> headerLines = Files.readAllLines(headerPath);
             ArrayList<Invoice> invoicesArray = new ArrayList<>();
             for (String headerLine : headerLines){
+                try {
                 String[] headerParts = headerLine.split(",");
                 int invNum = Integer.parseInt(headerParts[0]);
                 String invDate = headerParts[1];
@@ -138,6 +142,10 @@ public class Controller implements ActionListener, ListSelectionListener {
               
                 Invoice invoice = new Invoice(invNum, invDate, customerName);
                 invoicesArray.add(invoice);
+                } catch (Exception ex){
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Wrong line format!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
             result = fc.showOpenDialog(frame);
             if (result == JFileChooser.APPROVE_OPTION){
@@ -160,8 +168,9 @@ public class Controller implements ActionListener, ListSelectionListener {
                     }
                     Modify line = new Modify(itemName, totalPrice, count, inv);
                     inv.getLines().add(line);
-                } catch(NumberFormatException e ) {
-        JOptionPane.showMessageDialog(frame, "error in frame");
+                } catch (Exception ex){
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Wrong line format!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
                 }
             frame.setInvoices(invoicesArray);
@@ -174,6 +183,7 @@ public class Controller implements ActionListener, ListSelectionListener {
                 } 
                 catch (IOException ex){
                 ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Wrong format file", "Error", JOptionPane.ERROR_MESSAGE);
                 }
     }
 
@@ -224,14 +234,29 @@ public class Controller implements ActionListener, ListSelectionListener {
         String invDate = invCode.getInvDateField().getText();
         String customer = invCode.getCustNameField().getText();
         int invNum = frame.getNextInvNum();
-        
+        try {
+            String[] date = invDate.split("-");
+            if(date.length < 3) {
+                JOptionPane.showMessageDialog(frame, "Wrong date format","Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                int days = Integer.parseInt(date[0]);
+                int months = Integer.parseInt(date[1]);
+                int years = Integer.parseInt(date[2]);
+                if(days > 31 || months > 12){
+                    JOptionPane.showMessageDialog(frame, "Wrong date format","Error", JOptionPane.ERROR_MESSAGE);
+                } else {
         Invoice inv = new Invoice(invNum, invDate, customer);
         frame.getInvoices().add(inv);
         frame.getInvoiceTable().fireTableDataChanged();
         invCode.setVisible(false);
         invCode.dispose();
         invCode = null;
-    }
+                }
+            }
+        } catch (Exception ex){ 
+            JOptionPane.showMessageDialog(frame, "Wrong date format","Error", JOptionPane.ERROR_MESSAGE);
+        }
+        }  
 
     private void createItemSave() {
         String item = modCodes.getItemNameField().getText();
@@ -245,7 +270,6 @@ public class Controller implements ActionListener, ListSelectionListener {
             Modify line = new Modify(item, price, count, inv);
             inv.getLines().add(line);
             LinesTable linesTable = (LinesTable) frame.getPresentationTable().getModel();
-
             linesTable.fireTableDataChanged();
             frame.getInvoiceTable().fireTableDataChanged();
         }
